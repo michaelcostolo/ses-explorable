@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>State-Expanding Systems: Complexity Corridor</title>
+  <style>
+    :root {
+      --paper: #fbfaf7;
+      --ink: #25231f;
+      --muted: #69645c;
+      --rule: #d8d2c7;
+      --panel: #f1eee7;
+      --accent: #126a72;
+      --accent-2: #b65f2a;
+      --corridor: rgba(18, 106, 114, 0.16);
+      --grid: #e6e0d5;
+      --shadow: rgba(37, 35, 31, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #e9e4da;
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.55;
+    }
+
+    main {
+      width: min(800px, calc(100vw - 28px));
+      margin: 24px auto;
+      padding: clamp(22px, 5vw, 52px);
+      background: var(--paper);
+      box-shadow: 0 18px 50px var(--shadow);
+    }
+
+    h1 {
+      max-width: 680px;
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 7vw, 4rem);
+      line-height: 0.95;
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+
+    .dek {
+      max-width: 650px;
+      margin: 0 0 30px;
+      color: var(--muted);
+      font-size: 1.04rem;
+    }
+
+    .equation {
+      margin: 24px 0;
+      padding: 18px 20px;
+      border-block: 1px solid var(--rule);
+      font-size: clamp(1.35rem, 4vw, 2rem);
+      text-align: center;
+      font-style: italic;
+    }
+
+    .figure {
+      margin: 30px 0 18px;
+      border: 1px solid var(--rule);
+      background: #fffdf9;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      touch-action: none;
+    }
+
+    .axis,
+    .tick {
+      stroke: #8f887c;
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .grid {
+      stroke: var(--grid);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .axis-label,
+    .tick-label,
+    .plot-label {
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      fill: var(--muted);
+      font-size: 13px;
+    }
+
+    .plot-label {
+      font-weight: 700;
+    }
+
+    .curve-main {
+      fill: none;
+      stroke: var(--accent-2);
+      stroke-width: 3;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .curve-threshold {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 2;
+      stroke-dasharray: 7 5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .curve-slope {
+      fill: none;
+      stroke: #5f4b8b;
+      stroke-width: 2;
+      stroke-dasharray: 3 4;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .slope-axis {
+      stroke: #8b7aa8;
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .slope-label {
+      fill: #5f4b8b;
+    }
+
+    .corridor-fill {
+      fill: var(--corridor);
+    }
+
+    .readout {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 1px;
+      margin: 0;
+      border: 1px solid var(--rule);
+      background: var(--rule);
+    }
+
+    .readout div {
+      min-width: 0;
+      padding: 10px 12px;
+      background: var(--panel);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .readout dt {
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .readout dd {
+      margin: 2px 0 0;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px 18px;
+      margin: 24px 0 34px;
+      padding: 18px;
+      border: 1px solid var(--rule);
+      background: var(--panel);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    label span {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    output,
+    .inline-value {
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    input[type="checkbox"] {
+      width: 1rem;
+      height: 1rem;
+      accent-color: var(--accent);
+    }
+
+    .check-control {
+      align-content: center;
+      min-height: 47px;
+    }
+
+    .check-control span {
+      justify-content: flex-start;
+      align-items: center;
+    }
+
+    p {
+      margin: 0 0 18px;
+      font-size: 1.02rem;
+    }
+
+    h2 {
+      margin: 34px 0 10px;
+      font-size: 1.3rem;
+      font-weight: 600;
+      letter-spacing: 0;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 640px) {
+      main {
+        width: min(100vw - 16px, 800px);
+        margin: 8px auto;
+      }
+
+      .controls,
+      .readout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>The Corridor of Complexity</h1>
+    <p class="dek">
+      A small explorable model for state-expanding systems: as the number of
+      components grows, feasible novelty survives only inside a moving band of
+      constraint.
+    </p>
+
+    <p>
+      In this toy version of the SES model, the curve is defined by the
+      constant-feasibility relation
+      <span class="inline-value">c(n) = b ε<sup>1/(g n)</sup></span>.
+      The original form is <em>c(n) = b ε<sup>1/n</sup></em>. Here
+      <span class="inline-value">n<sub>eff</sub> = g n</span>, so
+      <span class="inline-value">g</span> scales the effective combinatorial
+      burden without changing the underlying model.
+    </p>
+
+    <div class="equation">c(n) = b ε<sup>1 / n<sub>eff</sub></sup>, &nbsp; n<sub>eff</sub> = g n</div>
+
+    <section class="controls" aria-label="Model controls">
+      <label>
+        <span>Minimum n <output id="nMinOut"></output></span>
+        <input id="nMin" type="range" min="0" max="4.7" value="0" step="0.01">
+      </label>
+      <label>
+        <span>Maximum n <output id="nMaxOut"></output></span>
+        <input id="nMax" type="range" min="1" max="5" value="5" step="0.01">
+      </label>
+      <label>
+        <span>Lower threshold ε <output id="lowerOut"></output></span>
+        <input id="lower" type="range" min="-6" max="-0.30103" value="-1.39794" step="0.01">
+      </label>
+      <label>
+        <span>Upper threshold ε <output id="upperOut"></output></span>
+        <input id="upper" type="range" min="0.01" max="0.99" value="0.35" step="0.001">
+      </label>
+      <label>
+        <span>Scale factor b <output id="scaleOut"></output></span>
+        <input id="scale" type="range" min="1.01" max="2" value="2" step="0.01">
+      </label>
+      <label>
+        <span>Growth parameter g <output id="growthOut"></output></span>
+        <input id="growth" type="range" min="0.35" max="2.5" value="1" step="0.01">
+      </label>
+      <label class="check-control">
+        <span><input id="showSlope" type="checkbox"> Show slope vs log(n)</span>
+      </label>
+    </section>
+
+    <figure class="figure">
+      <svg id="plot" viewBox="0 0 760 470" role="img" aria-labelledby="plotTitle plotDesc">
+        <title id="plotTitle">State-expanding systems corridor plot</title>
+        <desc id="plotDesc">A curve c(n) plotted between lower and upper threshold curves, with the corridor shaded.</desc>
+      </svg>
+    </figure>
+
+    <dl class="readout">
+      <div>
+        <dt>n range</dt>
+        <dd id="rangeReadout"></dd>
+      </div>
+      <div>
+        <dt>Thresholds</dt>
+        <dd id="thresholdReadout"></dd>
+      </div>
+      <div>
+        <dt>Midpoint ε</dt>
+        <dd id="midReadout"></dd>
+      </div>
+      <div>
+        <dt>Corridor width at max n</dt>
+        <dd id="widthReadout"></dd>
+      </div>
+      <div>
+        <dt>n_eff at max n</dt>
+        <dd id="effectiveReadout"></dd>
+      </div>
+    </dl>
+
+    <h2>Reading the Curve</h2>
+    <p>
+      The vertical axis is <em>c</em>, the effective base of feasible growth.
+      The horizontal axis is logarithmic in <em>n</em>, the number of
+      combinable components, so the same figure can span small systems and very
+      large state spaces.
+      With <span class="inline-value" id="inlineScale"></span> as the scale
+      factor and <span class="inline-value" id="inlineGrowth"></span> as the
+      scaling factor for effective burden, each threshold value of ε produces
+      one curve: the value of <em>c</em> needed for the feasible fraction to sit
+      at that threshold. At the right edge of the plot,
+      <span class="inline-value" id="inlineEffective"></span>.
+    </p>
+
+    <p>
+      The shaded region is the threshold corridor. Its lower boundary is
+      ε = <span class="inline-value" id="inlineLower"></span>, and its upper
+      boundary is ε = <span class="inline-value" id="inlineUpper"></span>.
+      Points inside the band are neither unconstrained nor extinguished: the
+      system has enough feasible adjacency to keep exploring, but enough
+      pruning to make that exploration structured.
+    </p>
+
+    <h2>Feasible and Infeasible Regions</h2>
+    <p>
+      Below the corridor, feasibility has collapsed faster than the state space
+      has expanded. Novelty may still exist, but it is too sparse to form
+      connected paths of reachable configurations. Above the corridor, feasible
+      combinations are abundant; exploration is easy, but the space is not yet
+      sharply differentiated by constraint.
+    </p>
+
+    <p>
+      Changing the thresholds changes what counts as reachable. A looser upper
+      threshold widens the permitted band, while a stricter lower threshold
+      pushes the lower boundary downward. The reachable space therefore is not
+      only a matter of system size; it is also a matter of where the system's
+      constraints place the boundary between viable and nonviable combinations.
+    </p>
+
+    <p class="note">
+      The orange curve uses the geometric midpoint between the two thresholds,
+      so it moves with the corridor while remaining centered in feasibility-ratio
+      space. When enabled, the purple dashed overlay shows a finite-difference
+      estimate of the midpoint curve's slope with respect to log(n).
+    </p>
+
+    <p class="note">
+      The lower ε slider is logarithmic in log10(ε), making very small
+      feasibility thresholds such as 1e-6 reachable without compressing the
+      useful part of the control.
+    </p>
+  </main>
+
+  <script>
+    const svg = document.querySelector("#plot");
+    const controls = {
+      nMin: document.querySelector("#nMin"),
+      nMax: document.querySelector("#nMax"),
+      lower: document.querySelector("#lower"),
+      upper: document.querySelector("#upper"),
+      scale: document.querySelector("#scale"),
+      growth: document.querySelector("#growth"),
+      showSlope: document.querySelector("#showSlope")
+    };
+
+    const outputs = {
+      nMin: document.querySelector("#nMinOut"),
+      nMax: document.querySelector("#nMaxOut"),
+      lower: document.querySelector("#lowerOut"),
+      upper: document.querySelector("#upperOut"),
+      scale: document.querySelector("#scaleOut"),
+      growth: document.querySelector("#growthOut"),
+      range: document.querySelector("#rangeReadout"),
+      thresholds: document.querySelector("#thresholdReadout"),
+      mid: document.querySelector("#midReadout"),
+      width: document.querySelector("#widthReadout"),
+      effective: document.querySelector("#effectiveReadout"),
+      inlineLower: document.querySelector("#inlineLower"),
+      inlineUpper: document.querySelector("#inlineUpper"),
+      inlineScale: document.querySelector("#inlineScale"),
+      inlineGrowth: document.querySelector("#inlineGrowth"),
+      inlineEffective: document.querySelector("#inlineEffective")
+    };
+
+    // SVG dimensions and margins are fixed so the figure behaves like a
+    // paper diagram even as the page itself narrows on mobile.
+    const plot = {
+      width: 760,
+      height: 470,
+      margin: { top: 34, right: 34, bottom: 58, left: 62 }
+    };
+
+    function readParams() {
+      let minPower = Number(controls.nMin.value);
+      let maxPower = Number(controls.nMax.value);
+      let nMin = Math.max(1, Math.round(Math.pow(10, minPower)));
+      let nMax = Math.max(10, Math.round(Math.pow(10, maxPower)));
+      let lowerPower = Number(controls.lower.value);
+      let lower = Math.pow(10, lowerPower);
+      let upper = Number(controls.upper.value);
+
+      // Keep ranges ordered while preserving the feel of direct manipulation.
+      if (nMin >= nMax) {
+        minPower = Math.max(0, maxPower - 0.05);
+        nMin = Math.max(1, Math.round(Math.pow(10, minPower)));
+        controls.nMin.value = minPower;
+      }
+      if (lower >= upper) {
+        lower = Math.max(0.000001, upper * 0.99);
+        lowerPower = Math.log10(lower);
+        controls.lower.value = lowerPower;
+      }
+
+      return {
+        nMin,
+        nMax,
+        lower,
+        upper,
+        scale: Number(controls.scale.value),
+        growth: Number(controls.growth.value),
+        showSlope: controls.showSlope.checked
+      };
+    }
+
+    function cValue(n, epsilon, scale, growth) {
+      return scale * Math.pow(epsilon, 1 / (growth * n));
+    }
+
+    function format(value, digits = 3) {
+      return Number(value).toLocaleString(undefined, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      });
+    }
+
+    function formatEpsilon(value) {
+      if (value < 0.001) return value.toExponential(2);
+      return format(value);
+    }
+
+    function formatN(value) {
+      return Math.round(value).toLocaleString();
+    }
+
+    function log10(value) {
+      return Math.log(value) / Math.LN10;
+    }
+
+    function pathFromPoints(points) {
+      return points.map((point, index) => {
+        const command = index === 0 ? "M" : "L";
+        return `${command}${point.x.toFixed(2)},${point.y.toFixed(2)}`;
+      }).join(" ");
+    }
+
+    function make(tag, attrs = {}) {
+      const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+      return node;
+    }
+
+    function draw() {
+      const params = readParams();
+      const mid = Math.sqrt(params.lower * params.upper);
+      const left = plot.margin.left;
+      const right = plot.width - plot.margin.right;
+      const top = plot.margin.top;
+      const bottom = plot.height - plot.margin.bottom;
+      const innerWidth = right - left;
+      const innerHeight = bottom - top;
+
+      // Sample the curves evenly in log(n), which keeps decade-spanning ranges smooth.
+      const logMin = log10(params.nMin);
+      const logMax = log10(params.nMax);
+      const sampleCount = Math.max(360, Math.ceil((logMax - logMin) * 160));
+      const samples = Array.from({ length: sampleCount }, (_, i) => {
+        const t = i / (sampleCount - 1);
+        return Math.pow(10, logMin + t * (logMax - logMin));
+      });
+
+      // Fit the y-axis to the active corridor while leaving a little air.
+      const allC = samples.flatMap(n => [
+        cValue(n, params.lower, params.scale, params.growth),
+        cValue(n, params.upper, params.scale, params.growth)
+      ]);
+      const yMin = Math.max(0, Math.min(...allC) - 0.04);
+      const yMax = Math.min(2.15, Math.max(...allC, params.scale) + 0.04);
+
+      const x = n => left + ((log10(n) - logMin) / (logMax - logMin)) * innerWidth;
+      const y = c => bottom - ((c - yMin) / (yMax - yMin)) * innerHeight;
+
+      const lowerPoints = samples.map(n => ({
+        x: x(n),
+        y: y(cValue(n, params.lower, params.scale, params.growth))
+      }));
+      const upperPoints = samples.map(n => ({
+        x: x(n),
+        y: y(cValue(n, params.upper, params.scale, params.growth))
+      }));
+      const mainPoints = samples.map(n => ({
+        x: x(n),
+        y: y(cValue(n, mid, params.scale, params.growth))
+      }));
+
+      svg.replaceChildren();
+
+      const yTicks = 5;
+
+      // Draw grid and axes before the corridor so the shaded band reads cleanly.
+      const decadeStart = Math.ceil(logMin);
+      const decadeEnd = Math.floor(logMax);
+      const xTickValues = [];
+      if (params.nMin !== Math.pow(10, decadeStart)) xTickValues.push(params.nMin);
+      for (let power = decadeStart; power <= decadeEnd; power += 1) {
+        xTickValues.push(Math.pow(10, power));
+      }
+      if (params.nMax !== Math.pow(10, decadeEnd)) xTickValues.push(params.nMax);
+
+      xTickValues.forEach(value => {
+        const px = x(value);
+        svg.append(make("line", { class: "grid", x1: px, y1: top, x2: px, y2: bottom }));
+        svg.append(make("line", { class: "tick", x1: px, y1: bottom, x2: px, y2: bottom + 6 }));
+        const label = make("text", {
+          class: "tick-label",
+          x: px,
+          y: bottom + 25,
+          "text-anchor": "middle"
+        });
+        label.textContent = formatN(value);
+        svg.append(label);
+      });
+
+      for (let i = 0; i <= yTicks; i += 1) {
+        const value = yMin + (i / yTicks) * (yMax - yMin);
+        const py = y(value);
+        svg.append(make("line", { class: "grid", x1: left, y1: py, x2: right, y2: py }));
+        svg.append(make("line", { class: "tick", x1: left - 6, y1: py, x2: left, y2: py }));
+        const label = make("text", {
+          class: "tick-label",
+          x: left - 10,
+          y: py + 4,
+          "text-anchor": "end"
+        });
+        label.textContent = value.toFixed(2);
+        svg.append(label);
+      }
+
+      svg.append(make("line", { class: "axis", x1: left, y1: bottom, x2: right, y2: bottom }));
+      svg.append(make("line", { class: "axis", x1: left, y1: top, x2: left, y2: bottom }));
+
+      // The filled band is one closed path: upper curve forward, lower curve back.
+      const corridorPath = [
+        pathFromPoints(upperPoints),
+        "L" + lowerPoints.slice().reverse().map(point => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(" L"),
+        "Z"
+      ].join(" ");
+      svg.append(make("path", { class: "corridor-fill", d: corridorPath }));
+
+      svg.append(make("path", { class: "curve-threshold", d: pathFromPoints(upperPoints) }));
+      svg.append(make("path", { class: "curve-threshold", d: pathFromPoints(lowerPoints) }));
+      svg.append(make("path", { class: "curve-main", d: pathFromPoints(mainPoints) }));
+
+      if (params.showSlope) {
+        const slopeValues = samples.map((n, index) => {
+          const prevIndex = Math.max(0, index - 1);
+          const nextIndex = Math.min(samples.length - 1, index + 1);
+          const cPrev = cValue(samples[prevIndex], mid, params.scale, params.growth);
+          const cNext = cValue(samples[nextIndex], mid, params.scale, params.growth);
+          const logPrev = log10(samples[prevIndex]);
+          const logNext = log10(samples[nextIndex]);
+          return (cNext - cPrev) / (logNext - logPrev || 1);
+        });
+        const slopeMax = Math.max(...slopeValues);
+        const slopeMin = Math.min(...slopeValues);
+        const slopePad = Math.max(0.0001, (slopeMax - slopeMin) * 0.12);
+        const sMin = slopeMin - slopePad;
+        const sMax = slopeMax + slopePad;
+        const slopeY = value => bottom - ((value - sMin) / (sMax - sMin)) * innerHeight;
+        const slopePoints = samples.map((n, index) => ({
+          x: x(n),
+          y: slopeY(slopeValues[index])
+        }));
+        svg.append(make("path", { class: "curve-slope", d: pathFromPoints(slopePoints) }));
+        svg.append(make("line", { class: "slope-axis", x1: right, y1: top, x2: right, y2: bottom }));
+        [sMin, (sMin + sMax) / 2, sMax].forEach(value => {
+          const py = slopeY(value);
+          svg.append(make("line", { class: "slope-axis", x1: right, y1: py, x2: right + 6, y2: py }));
+          const label = make("text", {
+            class: "tick-label slope-label",
+            x: right + 10,
+            y: py + 4
+          });
+          label.textContent = value.toFixed(3);
+          svg.append(label);
+        });
+      }
+
+      const xLabel = make("text", {
+        class: "axis-label",
+        x: (left + right) / 2,
+        y: plot.height - 16,
+        "text-anchor": "middle"
+      });
+      xLabel.textContent = "system size n (log scale)";
+      svg.append(xLabel);
+
+      const yLabel = make("text", {
+        class: "axis-label",
+        x: 18,
+        y: (top + bottom) / 2,
+        transform: `rotate(-90 18 ${(top + bottom) / 2})`,
+        "text-anchor": "middle"
+      });
+      yLabel.textContent = "feasible growth base c";
+      svg.append(yLabel);
+
+      const mainLabel = make("text", {
+        class: "plot-label",
+        x: mainPoints[Math.floor(sampleCount * 0.72)].x,
+        y: mainPoints[Math.floor(sampleCount * 0.72)].y - 12
+      });
+      mainLabel.textContent = "midpoint c(n)";
+      svg.append(mainLabel);
+
+      const corridorLabel = make("text", {
+        class: "plot-label",
+        x: left + innerWidth * 0.08,
+        y: top + 24
+      });
+      corridorLabel.textContent = "threshold corridor";
+      svg.append(corridorLabel);
+
+      // The readouts bind the essay text to the current state of the model.
+      const widthAtMax = Math.abs(
+        cValue(params.nMax, params.upper, params.scale, params.growth) -
+        cValue(params.nMax, params.lower, params.scale, params.growth)
+      );
+      const effectiveMax = params.growth * params.nMax;
+
+      outputs.nMin.textContent = formatN(params.nMin);
+      outputs.nMax.textContent = formatN(params.nMax);
+      outputs.lower.textContent = formatEpsilon(params.lower);
+      outputs.upper.textContent = format(params.upper);
+      outputs.scale.textContent = format(params.scale, 2);
+      outputs.growth.textContent = format(params.growth, 2);
+      outputs.range.textContent = `${formatN(params.nMin)} to ${formatN(params.nMax)}`;
+      outputs.thresholds.textContent = `${formatEpsilon(params.lower)} to ${format(params.upper)}`;
+      outputs.mid.textContent = formatEpsilon(mid);
+      outputs.width.textContent = widthAtMax.toFixed(4);
+      outputs.effective.textContent = formatN(effectiveMax);
+      outputs.inlineLower.textContent = formatEpsilon(params.lower);
+      outputs.inlineUpper.textContent = format(params.upper);
+      outputs.inlineScale.textContent = `b = ${format(params.scale, 2)}`;
+      outputs.inlineGrowth.textContent = `g = ${format(params.growth, 2)}`;
+      outputs.inlineEffective.textContent = `n_eff = ${formatN(effectiveMax)}`;
+    }
+
+    Object.values(controls).forEach(control => {
+      control.addEventListener("input", draw);
+    });
+
+    draw();
+  </script>
+</body>
+</html>
